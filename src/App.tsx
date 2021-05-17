@@ -14,7 +14,8 @@ const calculateNote = (frequency: number) => {
 
 function App() {
   const [audio, setAudio] = useState<MediaStream | null>();
-  const [tab, setTab] = useState<string | null>('');
+  const [tab, setTab] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     (async () => {
@@ -26,7 +27,8 @@ function App() {
     })();
   }, []);
 
-  const onModelLoaded = (a:any) => {
+  const onModelLoaded = () => {
+    setIsLoading(false);
     getPitch();
   };
 
@@ -58,7 +60,11 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <p>Note: {tab}</p>
+        {isLoading && !tab ? (
+          <div className="loader" />
+        ) : (
+          <p>Note {tab}</p>
+        )}
       </header>
     </div>
   );
