@@ -1,23 +1,64 @@
-import React from 'react';
-import logo from './logo.svg';
+import { useEffect, useState } from 'react';
+import ml5 from 'ml5';
 import './App.css';
 
+const MODEL_PATH = `${process.env.PUBLIC_URL}/model`;
+const NOTE_STRINGS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+const calculateNote = (frequency: number) => {
+  // Magic calculation fetched from https://github.com/cwilso/PitchDetect/blob/4190bc705747fbb3f82eb465ea18a2dfb5873080/js/pitchdetect.js#L207-L212
+  const noteNum = 12 * (Math.log( frequency / 440 )/Math.log(2));
+  const note = Math.round( noteNum ) + 69;
+  return note;
+}
+
 function App() {
+  const [audio, setAudio] = useState<MediaStream | null>();
+  const [tab, setTab] = useState<string | null>('');
+
+  useEffect(() => {
+    (async () => {
+      const mediaAudio = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false
+      });
+      setAudio(mediaAudio);
+    })();
+  }, []);
+
+  const onModelLoaded = (a:any) => {
+    getPitch();
+  };
+
+  const audioContext = new AudioContext();
+  const pitch = audio && ml5.pitchDetection(
+    MODEL_PATH, 
+    audioContext,
+    audio, 
+    onModelLoaded
+  );
+
+  const getPitch = () => {
+    pitch.getPitch((err: Error, frequency?: number) => {
+      if (err) {
+        console.warn({ err });
+      }
+
+      if (frequency) {
+        const note = calculateNote(frequency);
+        console.log(NOTE_STRINGS[note%12]);
+        setTab(NOTE_STRINGS[note%12]);
+      }
+
+      getPitch();
+    });
+  }
+
+  
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        <p>Note: {tab}</p>
       </header>
     </div>
   );
